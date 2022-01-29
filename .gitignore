@@ -1,0 +1,15 @@
+.DS_Store
+*.old
+*.bak
+*.pyc
+*.log
+*.psp
+*.zip
+.env
+.envrc
+.direnv/
+env/
+dist/
+docs/site/
+*.egg-info/
+.vscode/
