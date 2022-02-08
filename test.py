@@ -10,15 +10,21 @@ from powerstrip.models.pluginpackage import PluginPackage
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def main():
-    pp = PluginPackage("~/python/tmp")
+    pm = PluginManager("~/python/tmp")
+
+    #pp = PluginPackage("~/python/tmp")
+
     #pp.pack("~/python/tmp/b")
 
     #pp.install("pluginA-0.0.1.zip")
-    #pp.info("pluginB-0.0.2.psp")
-    pp.install("pluginB-0.0.2.psp")
 
-    pp.uninstall("pluginB")
+    info = pm.info("pluginB-0.0.2.psp")
+    print(info)
+    #pp.install("pluginB-0.0.2.psp")
+
+    #pp.uninstall("pluginB")
 
 
 def main2():

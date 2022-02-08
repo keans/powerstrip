@@ -8,6 +8,7 @@ import yaml
 from powerstrip.cerberusutils.customvalidator import CustomValidator
 from powerstrip.cerberusutils.schema import plugin_metadata_schema
 from powerstrip.exceptions import MetadataException
+from powerstrip.utils.semver import SemVer
 from powerstrip.utils.utils import ensure_path
 
 
@@ -21,75 +22,347 @@ class Metadata:
     """
     METADATA_FILENAME = "metadata.yml"
 
-    def __init__(
-        self, plugin_directory: Union[str, Path] = ".",
-        auto_load: bool = True
-    ):
-        self.plugin_directory = ensure_path(plugin_directory)
-        self.validator = CustomValidator(plugin_metadata_schema)
-
-        if auto_load:
-            # load metadata file
-            self.load()
+    def __init__(self):
+        """
+        initialize the Metadata class
+        """
+        self.uuid = None
+        self.name = None
+        self.author = None
+        self.description = None
+        self.version = None
+        self.category = None
+        self.url = None
+        self.tags = None
 
     @property
-    def filename(self) -> Path:
+    def uuid(self) -> str:
         """
-        returns complete filename
+        returns the plugin uuid
+
+        :return: plugin uuid
+        :rtype: str
         """
-        return self.plugin_directory.joinpath(self.METADATA_FILENAME)
+        return self._uuid or ""
+
+    @uuid.setter
+    def uuid(self, value: str):
+        """
+        set the plugin uuid
+
+        :param value: plugin uuid
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        self._uuid = value
+
+    @property
+    def name(self) -> str:
+        """
+        returns the plugin name or empty string, if not set
+
+        :return: plugin name or empty string, if not set
+        :rtype: str
+        """
+        return self._name or ""
+
+    @name.setter
+    def name(self, value: str):
+        """
+        set the plugin name
+
+        :param value: plugin name
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        self._name = value
+
+    @property
+    def description(self) -> str:
+        """
+        returns the plugin description or empty string, if not set
+
+        :return: plugin description or empty string, if not set
+        :rtype: str
+        """
+        return self._description or ""
+
+    @description.setter
+    def description(self, value: str):
+        """
+        set the plugin description
+
+        :param value: plugin description
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        self._description = value
+
+    @property
+    def author(self) -> str:
+        """
+        returns the plugin author or empty string, if not set
+
+        :return: plugin author or empty string, if not set
+        :rtype: str
+        """
+        return self._author or ""
+
+    @author.setter
+    def author(self, value: str):
+        """
+        set the plugin author
+
+        :param value: plugin author
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        self._author = value
+
+    @property
+    def version(self) -> SemVer:
+        """
+        returns the semantic version of the plugin
+
+        :return: semantic version version
+        :rtype: SemVer
+        """
+        return self._version
+
+    @version.setter
+    def version(self, value: str):
+        """
+        set the semantic version of the plugin
+
+        :param value: semantic version string
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        if value in ("", None):
+            self._version = SemVer()
+        else:
+            self._version = SemVer.create_from_str(value)
+
+    @property
+    def tags(self) -> list:
+        """
+        returns the list of tags
+
+        :return: list of tags
+        :rtype: list
+        """
+        return self._tags
+
+    @tags.setter
+    def tags(self, value: str) -> None:
+        """
+        set list of tags by provided comma separated string
+
+        :param value: comma separated string
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        if value is None:
+            # return empty list
+            self._tags = []
+
+        else:
+            # return list of lower-case tags
+            self._tags = [
+                s.strip().lower()
+                for s in value.split(",")
+                if s.strip() != ""
+            ]
+
+    @property
+    def category(self) -> str:
+        """
+        returns the plugin category or empty string, if not set
+
+        :return: plugin category or empty string, if not set
+        :rtype: str
+        """
+        return self._category or ""
+
+    @category.setter
+    def category(self, value: str):
+        """
+        set the plugin category
+
+        :param value: plugin category
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        self._category = value
+
+    @property
+    def url(self) -> str:
+        """
+        returns the plugin url or empty string, if not set
+
+        :return: plugin url or empty string, if not set
+        :rtype: str
+        """
+        return self._url or ""
+
+    @url.setter
+    def url(self, value: str):
+        """
+        set the plugin url
+
+        :param value: plugin url
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        self._url = value
 
     @property
     def plugin_name(self) -> str:
         """
-        derive plugin name from meta data
+        returns the plugin filename derived from name and version
+
+        :return: plugin name
+        :rtype: str
         """
         return f"{self.name}-{self.version}"
 
-    def _load_from_f_obj(self, f):
+    @property
+    def dict(self) -> dict:
         """
-        load YAML from file, validate the input
-        and set internal properties
-        """
-        y = yaml.safe_load(f) or {}
-        if not self.validator.validate(y):
-            # invalid content => raise exception with errors
-            raise MetadataException(self.validator.errors)
+        returns metadata representation as dictionary
 
-        # set internal properties
-        for k,v in y.items():
+        :return: dictionary of metadata
+        :rtype: dict
+        """
+        return {
+            "uuid": self.uuid,
+            "name": self.name,
+            "author": self.author,
+            "description": self.description,
+            "version": str(self.version),
+            "category": self.category,
+            "url" : self.url,
+            "tags": ", ".join(self.tags)
+        }
+
+    def from_dict(self, d: dict):
+        """
+        set Metadata properties by given dict
+
+        :param d: metadata values in dictionary
+        :type d: dict
+        :raises MetadataException: if invalid values in dictionary
+        """
+        assert isinstance(d, dict)
+
+        # validate given dictionary
+        validator = CustomValidator(plugin_metadata_schema)
+        if not validator.validate(d):
+            # invalid content => raise exception with errors
+            raise MetadataException(validator.errors)
+
+        # set internal properties based on dictionary
+        for k, v in d.items():
             setattr(self, k, v)
 
-    def load(self):
+    @staticmethod
+    def create_from_dict(d: dict) -> "Metadata":
         """
-        load metadata from file
-        """
-        if not self.filename.exists():
-            # meta data file does not exist
-            raise MetadataException(
-                f"The metadata file '{self.filename}' does not exist!"
-            )
+        create new instance of Metadata based on given dict
 
-        # load metadata file
-        log.debug(f"Loading '{self.filename}'...")
-        with self.filename.open() as f:
-            self._load_from_f_obj(f)
+        :return: instance of the Metadata
+        :rtype: Metadata
+        """
+        assert isinstance(d, dict)
+
+        md = Metadata()
+        md.from_dict(d)
+
+        return md
 
     @staticmethod
-    def create_from_f_obj(
-        f, plugin_directory: Union[str, Path] = "."
-    ):
+    def create_from_directory(
+        plugin_directory: Union[str, Path] = "."
+    ) -> "Metadata":
         """
-        create metadata instance from file object
-        """
-        metadata = Metadata(plugin_directory=plugin_directory)
-        metadata._load_from_f_obj(f)
+        create an instance of Metadata from given directory
 
-        return metadata
+        :param plugin_directory: plugin directory, defaults to "."
+        :type plugin_directory: Union[str, Path], optional
+        :return: [description]
+        :rtype: [type]
+        """
+        assert isinstance(plugin_directory, (str, Path))
+
+        md = Metadata()
+        with md.get_filename(plugin_directory).open("r") as f:
+            md.load(f)
+
+        return md
+
+    def get_filename(self, plugin_directory: Union[str, Path] = ".") -> Path:
+        """
+        returns metadata filename including the plugin directory
+
+        :param plugin_directory: plugin directory, defaults to "."
+        :type plugin_directory: Union[str, Path], optional
+        :return: metadata filename
+        :rtype: Path
+        """
+        assert isinstance(plugin_directory, (str, Path))
+
+        # ensure that plugin directory is a Path
+        plugin_directory = ensure_path(plugin_directory, must_exist=True)
+
+        return plugin_directory.joinpath(self.METADATA_FILENAME)
+
+    def save(self, f: TextIOWrapper):
+        """
+        save metadata to given file object
+
+        :param f: file object metadata is written to
+        :type f: TextIOWrapper
+        """
+        assert isinstance(f, TextIOWrapper)
+
+        yaml.safe_dump(self.dict, f)
+
+    def load(self, f: TextIOWrapper):
+        """
+        load YAML from file object, validate the input
+        and set internal properties of Metadata class
+
+        :param f: file object to load YAML from
+        :type f: TextIOWrapper
+        :raises MetadataException: if YAML cannot be parsed
+        """
+        assert isinstance(f, TextIOWrapper)
+
+        y = yaml.safe_load(f) or {}
+        self.from_dict(y)
 
     def __repr__(self) -> str:
+        """
+        string representation of the Metadata class
+
+        :return: string representation of the Metadata class
+        :rtype: str
+        """
         return (
-            f"<Metadata(uuid='{self.uuid}', name='{self.name}', "
-            f"description='{self.description}', version='{self.version}', "
+            f"<Metadata(uuid='{self.uuid}', "
+            f"name='{self.name}', "
+            f"description='{self.description}', "
+            f"author='{self.author}', "
+            f"version='{self.version}', "
+            f"category='{self.category}', "
+            f"tags='{self.tags}', "
             f"url='{self.url}')>"
         )

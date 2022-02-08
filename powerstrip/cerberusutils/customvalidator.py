@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from cerberus import Validator
 
-from powerstrip.utils import semver
+from powerstrip.utils import SemVer
 
 
 class CustomValidator(Validator):
@@ -17,7 +17,8 @@ class CustomValidator(Validator):
         => see https://semver.org
         """
         try:
-            semver(value)
+            SemVer.create_from_str(value)
+
         except TypeError as e:
             self._error(field, f"{e}")
 
@@ -50,3 +51,20 @@ class CustomValidator(Validator):
         res = re.compile(r"^[A-Fa-f0-9]+$").match(value)
         if not res:
             self._error(field, f"Invalid hex string '{value}'!")
+
+    def _check_with_is_author(self, field: str, value: str):
+        """
+        checks if value is a author value of the format
+        Firstname Lastname <email@example.com>
+        """
+        res = re.compile(r'^(?:"?([^"]*)"?\s)?(?:<?(.+@[^>]+)>?)$').match(value)
+        if not res:
+            self._error(field, f"Invalid author '{value}'!")
+
+    def _check_with_is_list(self, field: str, value: str):
+        """
+        checks if value is a  valid list
+        """
+        li = value.split(",")
+        if not all(li):
+            self._error(field, f"Invalid list '{value}'!")

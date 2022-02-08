@@ -18,48 +18,78 @@ class PluginPackage:
     plugin package
     """
     def __init__(
-        self, plugins_directory: Union[str, Path],
-        extension=".psp"
+        self,
+        filename: str = None
     ):
-        self.plugins_directory = plugins_directory
-        self.extension = extension
+        assert (filename is None) or isinstance(filename, (str, Path))
+
+        self.filename = filename
 
     @property
-    def plugins_directory(self) -> Path:
-        return self._plugins_directory
-
-    @plugins_directory.setter
-    def plugins_directory(self, value: Union[str, Path]):
-        self._plugins_directory = ensure_path(path=value, must_exist=True)
-
-    @property
-    def extension(self) -> Path:
-        return self._extension
-
-    @extension.setter
-    def extension(self, value: str):
-        if not value.startswith("."):
-            # invalid plugin package extension
-            raise PluginPackageException(
-                f"Invalid extension '{value}'!"
-            )
-
-        self._extension = value
-
-    def pack(self, directory: Union[str, Path]):
+    def filename(self) -> Path:
         """
-        pack plugin directory into a plugin file
+        set filename of the plugin package
+
+        :return: filename of the plugin package
+        :rtype: Path
         """
+        return self._filename
+
+    @filename.setter
+    def filename(self, value: Union[str, Path]):
+        """
+        sets the filename of the plugin package
+
+        :param value: filename plugin
+        :type value: Union[str, Path]
+        """
+        if value is not None:
+            # set filename
+            self._filename = ensure_path(path=value)
+
+        else:
+            # special case of unset filename directory
+            self._filename = None
+
+    def pack(
+        self,
+        directory: Union[str, Path],
+        target_directory: Union[str, Path],
+        ext: str = ".psp"
+    ) -> Path:
+        """
+        packs raw plugin from given directory and creates a plugin
+        package based on the given target plugin package name.
+
+        :param directory: directory with raw plugin content
+        :type directory: Union[str, Path]
+        :param target_directory: target directory of the plugin package
+        :type target_directory: Union[str, Path]
+        :param ext: name of the plugin package extension
+        :type ext: str
+        :returns: name of the plugin package
+        :type ext: Path
+        :raises PluginPackageException: if plugin package is already existing
+        """
+        assert isinstance(directory, (str, Path))
+        assert isinstance(target_directory, (str, Path))
+        assert isinstance(ext, str) and ext.startswith(".")
+
         # ensure that directory is a Path and that it does exist
         directory = ensure_path(directory, must_exist=True)
 
-        # try to read metadata to ensure that it is existing
-        md = Metadata(directory)
+        # load metadata from directory
+        md = Metadata.create_from_directory(directory)
 
+        # target directory must exist
+        target_directory = ensure_path(target_directory, must_exist=True)
+        # TODO: FIX THIS TEST
         # plugin package filename
-        plugin_filename = Path(f"{md.plugin_name}{self.extension}")
+        plugin_filename = target_directory.joinpath(
+            f"{md.name.lower()}-{md.version}{ext}"
+        )
         if plugin_filename.exists():
-            # plugin does already exist
+            # plugin package does already exist
             raise PluginPackageException(
                 f"The plugin file '{plugin_filename}' does already exist!"
             )
@@ -74,9 +104,22 @@ class PluginPackage:
                 log.debug(f"Adding '{fn}' to plugin package...")
                 zf.write(fn, fn.relative_to(directory))
 
-    def install(self, plugin_filename: Union[str, Path]):
+        return plugin_filename
+
+    def install(
+        self,
+        plugin_filename: Union[str, Path],
+        target_directory: Union[str, Path]
+    ):
         """
-        install plugin package from plugin file
+        installs a plugin package from a given plugin file
+        into the provided target directory
+
+        :param plugin_filename: plugin filename
+        :type plugin_filename: Union[str, Path]
+        :param target_directory: target directory
+        :type target_directory: Union[str, Path]
+        :raises PluginPackageException: when plugin file does not exist
         """
         # check that plugin filename is a Path and that it exists
         plugin_filename = ensure_path(plugin_filename, must_exist=True)
@@ -96,14 +139,12 @@ class PluginPackage:
                 )
 
                 # prepare target directory and check if it already exists
-                target_directory = self.plugins_directory.joinpath(
-                    metadata.name
-                )
+                target_directory = target_directory.joinpath(metadata.name)
                 if target_directory.exists():
                     # plugin does already exist
                     raise PluginPackageException(
                         f"The plugin '{metadata.name}' does already "
-                        f"exist in '{self.plugins_directory}'! Abort."
+                        f"exist in '{target_directory}'! Abort."
                     )
 
                 log.debug(f"Installing plugin to '{target_directory}'...")
@@ -120,16 +161,33 @@ class PluginPackage:
                 f"The file '{plugin_filename}' is not a valid plugin file!"
             )
 
-    def uninstall(self, plugin_name: str):
+    def uninstall(
+        self,
+        plugin_name: str,
+        target_directory: Union[str, Path]
+    ):
         """
-        uninstall plugin package
+        uninstall plugin package from ginve target directory
+
+        :param plugin_name: name of the plugin
+        :type plugin_name: str
+        :param target_directory: target directory of the plugins
+        :type target_directory: Union[str, Path]
+        :raises PluginPackageException:
         """
+        if not target_directory is None:
+            # target directory not set
+            raise PluginPackageException(
+                "The plugins directory '{target_directory}' is not "
+                "set so that the plugin cannot be uninstalled! Abort."
+            )
+
         # get plugin directory by its name
-        plugin_directory = self.plugins_directory.joinpath(plugin_name)
+        plugin_directory = target_directory.joinpath(plugin_name)
         if not plugin_directory.exists():
             raise PluginPackageException(
                 f"The plugin '{plugin_name}' is not installed "
-                f"in '{self.plugins_directory}'! Abort."
+                f"in '{target_directory}'! Abort."
             )
 
         # read metadata before, to check if valid plugin directory
@@ -141,10 +199,19 @@ class PluginPackage:
         )
         shutil.rmtree(plugin_directory)
 
-    def info(self, plugin_filename: Union[str, Path]):
+    @classmethod
+    def info(cls, plugin_filename: Union[str, Path]) -> Metadata:
         """
         show info about plugin package from metadata file
+
+        :param plugin_filename: plugin filename
+        :type plugin_filename: Union[str, Path]
+        :raises PluginPackageException: if, plugin file is broken
+        :return: metadata with information about the plugin
+        :rtype: Metadata
         """
+        assert isinstance(plugin_filename, (str, Path))
+
         # check that plugin filename is a Path and that it exists
         plugin_filename = ensure_path(plugin_filename, must_exist=True)
 

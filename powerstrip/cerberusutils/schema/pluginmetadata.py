@@ -1,5 +1,6 @@
 # cerberus schema for plugin metadata
 plugin_metadata_schema = {
+    # mandatory
     "uuid": {
         "type": "string",
         "required": True,
@@ -14,6 +15,11 @@ plugin_metadata_schema = {
         "type": "string",
         "required": True,
     },
+    "author": {
+        "type": "string",
+        "required": True,
+        "check_with": "is_author"
+    },
     "version": {
         "type": "string",
         "required": True,
@@ -23,5 +29,16 @@ plugin_metadata_schema = {
         "type": "string",
         "required": True,
         "check_with": "is_url"
+    },
+    # optional
+    "category": {
+        "type": "string",
+        "required": False,
+        "check_with": "is_alphanumeric"
+    },
+    "tags": {
+        "type": "string",
+        "required": False,
+        "check_with": "is_list"
     },
 }
