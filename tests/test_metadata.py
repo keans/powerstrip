@@ -247,7 +247,7 @@ class TestMetadata:
         with pytest.raises(AssertionError):
             md.save(None)
 
-        # load some dummy data
+        # save some dummy data
         md.from_dict(METADATA_VALUES)
         with TEMP_FILE.open("w") as f:
             md.save(f)
@@ -277,3 +277,19 @@ class TestMetadata:
             (md2.dict[k], METADATA_VALUES[k])
             for k in METADATA_VALUES
         ])
+
+    def test_create_from_f(self):
+        # not a valid file object type
+        with pytest.raises(AssertionError):
+            md = Metadata.create_from_f(None)
+
+        # save some dummy data
+        md = Metadata()
+        md.from_dict(METADATA_VALUES)
+        with TEMP_FILE.open("w") as f:
+            md.save(f)
+
+        # create new instance based on given file object
+        with TEMP_FILE.open("r") as f:
+            md = Metadata.create_from_f(f)
+            assert isinstance(md, Metadata)

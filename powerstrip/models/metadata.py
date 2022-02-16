@@ -308,6 +308,21 @@ class Metadata:
 
         return md
 
+    @staticmethod
+    def create_from_f(f: TextIOWrapper) -> "Metadata":
+        """
+        create new instance of Metadata based on given file object
+
+        :return: instance of the Metadata
+        :rtype: Metadata
+        """
+        assert isinstance(f, TextIOWrapper)
+
+        md = Metadata()
+        md.load(f)
+
+        return md
+
     def get_filename(self, plugin_directory: Union[str, Path] = ".") -> Path:
         """
         returns metadata filename including the plugin directory

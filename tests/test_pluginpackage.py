@@ -43,7 +43,7 @@ class TestPluginPackage:
         plugin_dir.mkdir()
 
         # path exists, but metadata.yml is missing
-        with pytest.raises(MetadataException):
+        with pytest.raises(FileNotFoundError):
             pp.pack(plugin_dir, target_directory)
 
         # create metadata.yml file
@@ -98,4 +98,3 @@ class TestPluginPackage:
 
         # get info of valid plugin package
         metadata = pp.info(plugin_filename)
-

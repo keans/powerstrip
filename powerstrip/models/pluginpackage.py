@@ -1,3 +1,4 @@
+import io
 import logging
 import shutil
 import zipfile
@@ -83,7 +84,7 @@ class PluginPackage:
 
         # target directory must exist
         target_directory = ensure_path(target_directory, must_exist=True)
-        # TODO: FIX THIS TEST
+
         # plugin package filename
         plugin_filename = target_directory.joinpath(
             f"{md.name.lower()}-{md.version}{ext}"
@@ -134,9 +135,10 @@ class PluginPackage:
             log.debug(f"Opening '{plugin_filename}'...")
             with zipfile.ZipFile(plugin_filename) as zf:
                 # get metadata from metadata file within the plugin package
-                metadata = Metadata.create_from_f_obj(
-                    zf.read(Metadata.METADATA_FILENAME)
-                )
+                with zf.open(Metadata.METADATA_FILENAME) as f:
+                    metadata = Metadata.create_from_f(
+                        io.TextIOWrapper(f)
+                    )
 
                 # prepare target directory and check if it already exists
                 target_directory = target_directory.joinpath(metadata.name)
@@ -219,9 +221,10 @@ class PluginPackage:
             log.debug(f"Opening '{plugin_filename}'...")
             with zipfile.ZipFile(plugin_filename) as zf:
                 # get metadata from metadata file within the plugin package
-                metadata = Metadata.create_from_f_obj(
-                    zf.read(Metadata.METADATA_FILENAME)
-                )
+                with zf.open(Metadata.METADATA_FILENAME) as f:
+                    metadata = Metadata.create_from_f(
+                        io.TextIOWrapper(f)
+                    )
 
                 return metadata
 
