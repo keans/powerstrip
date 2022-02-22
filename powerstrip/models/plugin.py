@@ -16,8 +16,10 @@ class Plugin(abc.ABC):
             sys.modules[self.__module__].__file__
         ).parent
 
-        # get plugin's metadata
-        self.metadata = Metadata(self.plugin_path, auto_load_metadata)
+        self.metadata = Metadata()
+        if auto_load_metadata:
+            # get plugin's metadata from directory
+            self.metadata = Metadata.create_from_directory(self.plugin_path)
 
     @abc.abstractmethod
     def init(self):

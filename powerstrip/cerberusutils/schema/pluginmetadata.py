@@ -25,6 +25,10 @@ plugin_metadata_schema = {
         "required": True,
         "check_with": "is_semver"
     },
+    "license": {
+        "type": "string",
+        "required": True,
+    },
     "url": {
         "type": "string",
         "required": True,

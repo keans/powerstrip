@@ -1,3 +1,4 @@
+from inspect import isclass
 import zipfile
 import logging
 import shutil
@@ -9,6 +10,7 @@ from powerstrip.models import plugin
 
 from powerstrip.utils import load_module
 from powerstrip.models.plugin import Plugin
+from powerstrip.models.metadata import Metadata
 from powerstrip.models.pluginpackage import PluginPackage
 from powerstrip.utils.utils import ensure_path
 from powerstrip.exceptions import PluginManagerException
@@ -17,10 +19,6 @@ from powerstrip.exceptions import PluginManagerException
 # prepare logger
 log = logging.getLogger(__name__)
 
-# TODO:
-#
-# ADD SUBDIRECTORY WHEN FLAG SET IN PM FOR CATEGORIES?!
-#
 
 class PluginManager:
     """
@@ -29,17 +27,34 @@ class PluginManager:
     def __init__(
         self,
         plugins_directory: Union[str, Path],
-        auto_discover: bool = True,
         subclass: Plugin = Plugin,
-        plugin_ext: str = ".pkg",
-        category_subdir: bool = False
+        use_category: bool = False,
+        auto_discover: bool = True,
+        plugin_ext: str = ".pkg"
     ):
-        self.plugins_directory = plugins_directory
-        self.plugin_ext = plugin_ext
-        self.category_subdir = category_subdir
+        """
+        initialize the plugin manager class
 
-        if auto_discover:
-            # auto discover plugins from directory
+        :param plugins_directory: directory where plugins are installed
+        :type plugins_directory: Union[str, Path]
+        :param subclass: subclass of Plugin that is managed by the
+                         plugin manager, defaults to Plugin
+        :type subclass: Plugin, optional
+        :param category_subdir: use category subdirectories, defaults to False
+        :type use_category: bool, optional
+        :param auto_discover: if True, plugins will be discovered on startup,
+                              defaults to True
+        :type auto_discover: bool, optional
+        :param plugin_ext: plugin extension name, defaults to ".pkg"
+        :type plugin_ext: str, optional
+        """
+        self.plugins_directory = plugins_directory
+        self.subclass = subclass
+        self.use_category = use_category
+        self.plugin_ext = plugin_ext
+
+        if auto_discover and not use_category :
+            # auto discover plugins from directory, if no category required
             self.discover(subclass)
 
     @property
@@ -90,23 +105,55 @@ class PluginManager:
 
         self._plugin_ext = value
 
+    @property
+    def categories(self) -> list:
+        """
+        return list of categories, i.e., list of subdirectories
+        in plugin directory; if category is disabled return
+        empty list
+
+        :return: list of categories, if category is disabled empty list
+        :rtype: list
+        """
+        if not self.use_category:
+            # categories not used, return empty list
+            return []
+
+        return [
+            directory.parents[1].name
+            for directory in self.plugins_directory.glob(
+                f"**/{Metadata.METADATA_FILENAME}"
+            )
+            if directory
+        ]
+
     def get_plugin_classes(
         self,
-        subclass: Plugin = Plugin,
+        subclass: Plugin = None,
         category: str = None,
-        tags: list = []
+        tag: str = None
     ) -> list:
+        # if not provided, use originally define subclass
+        subclass = subclass or self.subclass
+
         plugin_classes = []
-        for plugincls in Plugin.__subclasses__():
+        for plugincls in subclass.__subclasses__():
             # if (category is not None) and category not in plugincls.C
 
             # if (
             #     issubclass(plugincls, subclass) and
             #     (plugincls is not subclass)
             # ):
-            print(plugincls)
+            if tag is None or (tag in plugincls().metadata.tags):
+                plugin_classes.append(plugincls)
 
-    def discover(self, subclass: Plugin = Plugin) -> None:
+        return plugin_classes
+
+    def discover(
+        self,
+        subclass: Plugin = Plugin,
+        category: str = None,
+    ) -> None:
         """
         discover all plugins that are located in the plugins directory
         and that do match the given subclass
@@ -115,11 +162,27 @@ class PluginManager:
                          defaults to Plugin
         :type subclass: Plugin, optional
         """
+        assert (subclass is None) or issubclass(subclass, Plugin)
+        assert (category is None) or isinstance(category, str)
+
+        if self.use_category and (category is None):
+            # category name is missing
+            raise PluginManagerException(
+                "Category is activated, but no category name "
+                "is provided! Abort."
+            )
+
         log.debug(
             f"Discovering all plugins in '{self.plugins_directory}' for "
             f"subclass '{subclass}'..."
         )
-        for fn in self.plugins_directory.glob("**/*.py"):
+
+        plugin_dir = self.plugins_directory
+        if self.use_category:
+            # add category subdirectory
+            plugin_dir = self.plugins_directory.joinpath(category)
+
+        for fn in plugin_dir.glob("**/*.py"):
             # derive from relative path the module name
             module_name = (
                 fn.with_suffix("").relative_to(
@@ -147,6 +210,29 @@ class PluginManager:
 
         return plugin_classes
 
+    def pack(
+        self,
+        directory: Union[str, Path],
+        target_directory: Union[str, Path] = "."
+    ) -> Path:
+        """
+        pack plugin from given source directory and store the
+        resulting plugin package to the target directory
+
+        :param directory: plugin source directory
+        :type directory: Union[str, Path]
+        :param target_directory: target directory to which packed plugin
+                                 will be stored
+        :type target_directory: Union[str, Path]
+        :return: filename of the packed plugin
+        :rtype: Path
+        """
+        return PluginPackage.pack(
+            directory=directory,
+            target_directory=target_directory,
+            ext=self.plugin_ext
+        )
+
     def info(self, plugin_filename: Union[str, Path]) -> dict:
         """
         get metadata information of the given plugin file
@@ -156,24 +242,52 @@ class PluginManager:
         :return: metata of the plugin
         :rtype: dict
         """
-        return PluginPackage.info("pluginB-0.0.2.psp")
+        return PluginPackage.info(plugin_filename)
 
-    def install(self, filename: Union[str, Path]) -> None:
+    def install(
+        self,
+        plugin_filename: Union[str, Path]
+    ) -> Path:
         """
         install plugin from given filename
 
-        :param filename: plugin filename
-        :type filename: Union[str, Path]
+        :param plugin_filename: plugin filename
+        :type plugin_filename: Union[str, Path]
+        :return: installed plugin directory
         """
-        pp = PluginPackage(plugins_directory=self.plugins_directory)
-        pp.install(filename)
+        return PluginPackage.install(
+            plugin_filename=plugin_filename,
+            target_directory=self.plugins_directory,
+            use_category=self.use_category
+        )
 
-    def uninstall(self, plugin_name: str) -> None:
+    def uninstall(
+        self,
+        plugin_name: str,
+        category: str = None
+    ) -> None:
         """
         uninstall the plugin with the given name
 
         :param plugin_name: plugin name
         :type plugin_name: str
+        :param category: plugin's category
+        :type category: str
         """
-        pp = PluginPackage(plugins_directory=self.plugins_directory)
-        pp.uninstall(plugin_name)
+        PluginPackage.uninstall(
+            plugin_name=plugin_name,
+            target_directory=self.plugins_directory,
+            category=category
+        )
+
+    def __repr__(self) -> str:
+        """
+        string representation of plugin manager
+
+        :return: string representation of plugin manager
+        :rtype: str
+        """
+        return (
+            f"<PluginManager(plugins_directory='{self.plugins_directory}', "
+            f"subclass={self.subclass}, plugin_ext='{self.plugin_ext}')>"
+        )

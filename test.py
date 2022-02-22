@@ -14,17 +14,19 @@ logging.basicConfig(level=logging.DEBUG)
 def main():
     pm = PluginManager("~/python/tmp")
 
-    #pp = PluginPackage("~/python/tmp")
+    pp = PluginPackage()
+    #pp.pack("~/python/tmp/a", ".")
 
-    #pp.pack("~/python/tmp/b")
+    info = pm.info("pluginA-0.0.1.psp")
+    print(info)
 
-    #pp.install("pluginA-0.0.1.zip")
+    #pp.install("pluginA-0.0.1.psp", "~/python/tmp", use_category=True)
 
     info = pm.info("pluginB-0.0.2.psp")
     print(info)
-    #pp.install("pluginB-0.0.2.psp")
+    #pp.install("pluginB-0.0.2.psp", "~/python/tmp", use_category=True)
 
-    #pp.uninstall("pluginB")
+    pp.uninstall("pluginB", "~/python/tmp", "sSOA")
 
 
 def main2():
@@ -46,4 +48,4 @@ def main3():
 
 
 if __name__ == "__main__":
-    main()
+    main3()

@@ -13,6 +13,7 @@ METADATA = """---
 uuid: {uuid}
 name: {name}
 description: {description}
+license: {license}
 version: {version}
 author: {author}
 url: {url}
@@ -25,6 +26,7 @@ METADATA_VALUES = {
     "uuid": "deadbeef",
     "name": "MyPlugin",
     "description": "This is my description.",
+    "license": "MIT",
     "version": "1.2.3",
     "author": "Foo Bar <foo.bar@example.com>",
     "url": "https://www.example.com",
@@ -47,6 +49,8 @@ class TestMetadata:
     def test_init(self, md: Metadata):
         # create valid metadata class instance on current directory
         assert isinstance(md, Metadata)
+
+        print(md)
 
     def test_uuid(self, md: Metadata):
         # create valid metadata class
@@ -170,7 +174,7 @@ class TestMetadata:
 
     def test_category(self, md: Metadata):
         # create valid metadata class
-        assert md.category == ""
+        assert md.category == "default"
 
         # invalid type
         with pytest.raises(AssertionError):
@@ -178,7 +182,7 @@ class TestMetadata:
 
         # None as valid category
         md.category = None
-        assert md.category == ""
+        assert md.category == "default"
 
         # valid category
         md.category = "deadbeef"
@@ -268,6 +272,7 @@ class TestMetadata:
             (md.dict[k], METADATA_VALUES[k])
             for k in METADATA_VALUES
         ])
+        print(md)
 
         # read file again from directory
         md2 = md.create_from_directory(TEMP_FILE.parent)

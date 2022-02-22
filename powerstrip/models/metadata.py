@@ -31,6 +31,7 @@ class Metadata:
         self.author = None
         self.description = None
         self.version = None
+        self.license = None
         self.category = None
         self.url = None
         self.tags = None
@@ -124,6 +125,28 @@ class Metadata:
         self._author = value
 
     @property
+    def license(self) -> str:
+        """
+        returns the plugin license or empty string, if not set
+
+        :return: plugin license or empty string, if not set
+        :rtype: str
+        """
+        return self._license or ""
+
+    @license.setter
+    def license(self, value: str):
+        """
+        set the plugin license
+
+        :param value: plugin license
+        :type value: str
+        """
+        assert (value is None) or isinstance(value, str)
+
+        self._license = value
+
+    @property
     def version(self) -> SemVer:
         """
         returns the semantic version of the plugin
@@ -193,14 +216,14 @@ class Metadata:
     @category.setter
     def category(self, value: str):
         """
-        set the plugin category
+        set the plugin category or if None, use "default"
 
-        :param value: plugin category
+        :param value: plugin category or if None, "default"
         :type value: str
         """
         assert (value is None) or isinstance(value, str)
 
-        self._category = value
+        self._category = value or "default"
 
     @property
     def url(self) -> str:
@@ -247,6 +270,7 @@ class Metadata:
             "name": self.name,
             "author": self.author,
             "description": self.description,
+            "license": self.license,
             "version": str(self.version),
             "category": self.category,
             "url" : self.url,
@@ -376,6 +400,7 @@ class Metadata:
             f"name='{self.name}', "
             f"description='{self.description}', "
             f"author='{self.author}', "
+            f"license='{self.license}', "
             f"version='{self.version}', "
             f"category='{self.category}', "
             f"tags='{self.tags}', "

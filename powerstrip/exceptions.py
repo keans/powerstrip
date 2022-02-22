@@ -1,3 +1,7 @@
+class ModuleException(Exception):
+    pass
+
+
 class MetadataException(Exception):
     pass
 
