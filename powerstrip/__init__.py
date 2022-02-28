@@ -5,4 +5,4 @@ __email__ = "akellner@gmx.de"
 __version__ = "0.0.1"
 
 from powerstrip.models import Plugin
-
+from powerstrip.pluginmanager import PluginManager

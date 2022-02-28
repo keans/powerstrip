@@ -84,25 +84,45 @@ class TestPluginManager:
         # get categories
         assert pm.categories == [METADATA_VALUES["category"]]
 
-        # discover all plugins, but category is missing
-        with pytest.raises(PluginManagerException):
-            pm.discover()
+        # discover plugins
+        pm.discover()
 
-        # discover all plugins, i.e., the one installed
-        pm.discover(category=METADATA_VALUES["category"])
+        # get all plugins
         assert len(pm.get_plugin_classes()) == 1
 
-        # discover all plugins with given tag, i.e., the one installed
-        pm.discover(category=METADATA_VALUES["category"])
+        # get all plugins with given tag, i.e., the one installed
         assert len(pm.get_plugin_classes(tag="blup")) == 1
 
-        # discover all plugins with unknown tag
-        pm.discover(category=METADATA_VALUES["category"])
+        # get all plugins with unknown tag
         assert len(pm.get_plugin_classes(tag="xyz")) == 0
 
+        # get all plugins with given category, i.e., the one installed
+        assert len(
+            pm.get_plugin_classes(category=METADATA_VALUES["category"])
+        ) == 1
+
+        # get all plugins with unknown category
+        assert len(pm.get_plugin_classes(category="unknow_category")) == 0
+
+        # get all plugins with given category and valid tag
+        assert len(
+            pm.get_plugin_classes(
+                category=METADATA_VALUES["category"],
+                tag="blup"
+            )
+        ) == 1
+
+        # get all plugins with given category and invalid tag
+        assert len(
+            pm.get_plugin_classes(
+                category=METADATA_VALUES["category"],
+                tag="xyz"
+            )
+        ) == 0
+
         # uninstall plugin
-        #pm.uninstall(
-        #    plugin_name=METADATA_VALUES["name"],
-        #    category=METADATA_VALUES["category"]
-        #)
+        pm.uninstall(
+            plugin_name=METADATA_VALUES["name"],
+            category=METADATA_VALUES["category"]
+        )
 

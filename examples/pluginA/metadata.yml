@@ -1,0 +1,9 @@
+uuid: 2f01711063c8473995ac0d28ccf007ab
+name: pluginA
+author: foo <foo@example.com>
+description: This is plugin A.
+version: 0.0.1
+license: MIT
+category: blue
+url: https://www.example.com
+tags: one,two

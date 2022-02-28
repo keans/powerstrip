@@ -1,0 +1,9 @@
+uuid: d912515630c64444b0023d040c3f581d
+name: pluginB
+author: bar <bar@example.com>
+description: This is plugin B.
+version: 0.0.2
+license: BSD
+category: red
+url: https://www.example.com
+tags: one,three

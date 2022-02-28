@@ -16,10 +16,6 @@ from powerstrip.utils.utils import ensure_path
 from powerstrip.exceptions import PluginManagerException
 
 
-# prepare logger
-log = logging.getLogger(__name__)
-
-
 class PluginManager:
     """
     plugin manager
@@ -30,7 +26,7 @@ class PluginManager:
         subclass: Plugin = Plugin,
         use_category: bool = False,
         auto_discover: bool = True,
-        plugin_ext: str = ".pkg"
+        plugin_ext: str = ".psp"
     ):
         """
         initialize the plugin manager class
@@ -45,13 +41,14 @@ class PluginManager:
         :param auto_discover: if True, plugins will be discovered on startup,
                               defaults to True
         :type auto_discover: bool, optional
-        :param plugin_ext: plugin extension name, defaults to ".pkg"
+        :param plugin_ext: plugin extension name, defaults to ".psp"
         :type plugin_ext: str, optional
         """
         self.plugins_directory = plugins_directory
         self.subclass = subclass
         self.use_category = use_category
         self.plugin_ext = plugin_ext
+        self.log = logging.getLogger(self.__class__.__name__)
 
         if auto_discover and not use_category :
             # auto discover plugins from directory, if no category required
@@ -76,7 +73,11 @@ class PluginManager:
         :type value: Union[str, Path]
         """
         # ensure that plugin_directory is a path
-        self._plugin_directory = ensure_path(value, must_exist=True)
+        self._plugin_directory = ensure_path(value)
+
+        if not self._plugin_directory.exists():
+            # plugin directory does not exist => create it
+            self._plugin_directory.mkdir(parents=True)
 
     @property
     def plugin_ext(self) -> str:
@@ -138,13 +139,32 @@ class PluginManager:
 
         plugin_classes = []
         for plugincls in subclass.__subclasses__():
-            # if (category is not None) and category not in plugincls.C
+            plugin = plugincls()
 
-            # if (
-            #     issubclass(plugincls, subclass) and
-            #     (plugincls is not subclass)
-            # ):
-            if tag is None or (tag in plugincls().metadata.tags):
+            match = True
+            if (
+                (subclass is not None) and
+                not issubclass(plugincls, subclass)
+            ):
+                # subclass is not matching
+                match = False
+
+            if (
+                (category is not None) and
+                (category != plugin.metadata.category)
+            ):
+                # category is not matching
+                match = False
+
+            if (
+                (tag is not None) and
+                (tag not in plugincls().metadata.tags)
+            ):
+                # tag is not matching
+                match = False
+
+            if match:
+                # matching search criteria then add to list
                 plugin_classes.append(plugincls)
 
         return plugin_classes
@@ -152,7 +172,6 @@ class PluginManager:
     def discover(
         self,
         subclass: Plugin = Plugin,
-        category: str = None,
     ) -> None:
         """
         discover all plugins that are located in the plugins directory
@@ -163,26 +182,12 @@ class PluginManager:
         :type subclass: Plugin, optional
         """
         assert (subclass is None) or issubclass(subclass, Plugin)
-        assert (category is None) or isinstance(category, str)
 
-        if self.use_category and (category is None):
-            # category name is missing
-            raise PluginManagerException(
-                "Category is activated, but no category name "
-                "is provided! Abort."
-            )
-
-        log.debug(
+        self.log.debug(
             f"Discovering all plugins in '{self.plugins_directory}' for "
             f"subclass '{subclass}'..."
         )
-
-        plugin_dir = self.plugins_directory
-        if self.use_category:
-            # add category subdirectory
-            plugin_dir = self.plugins_directory.joinpath(category)
-
-        for fn in plugin_dir.glob("**/*.py"):
+        for fn in self.plugins_directory.glob("**/*.py"):
             # derive from relative path the module name
             module_name = (
                 fn.with_suffix("").relative_to(
@@ -203,7 +208,7 @@ class PluginManager:
             )
         ]
 
-        log.debug(
+        self.log.debug(
             f"Found {len(plugin_classes)} plugins: "
             f"{', '.join([p.__name__ for p in plugin_classes])}"
         )
