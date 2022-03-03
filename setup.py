@@ -15,7 +15,7 @@ def get_long_description():
 
 
 setup(
-    name="powerstrip",
+    name="python-powerstrip",
     version="0.0.1",
     description="Simple module to manage plugins.",
     long_description=get_long_description(),
@@ -37,9 +37,7 @@ setup(
     ],
     python_requires=">=3.6",
     keywords="powerstrip",
-    packages=find_packages(
-        exclude=["contrib", "docs", "tests"]
-    ),
+    packages=["powerstrip"]
     install_requires=[
         "pyyaml", "cerberus"
     ],

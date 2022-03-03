@@ -20,10 +20,10 @@ The easiest way to install the current version of `powerstrip` is by using
 ::
 
     # install the module
-    pip install -U powerstrip
+    pip install -U python-powerstrip
 
     # or install the module with mkdocs support
-    pip install -U powerstrip[docs]
+    pip install -U python-powerstrip[docs]
 
 
 Documentation
