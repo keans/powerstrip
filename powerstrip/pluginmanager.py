@@ -1,12 +1,7 @@
 from inspect import isclass
-import zipfile
 import logging
-import shutil
 from pathlib import Path
 from typing import Union
-
-from click import format_filename
-from powerstrip.models import plugin
 
 from powerstrip.utils import load_module
 from powerstrip.models.plugin import Plugin

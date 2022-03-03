@@ -37,7 +37,9 @@ setup(
     ],
     python_requires=">=3.6",
     keywords="powerstrip",
-    packages=["powerstrip"]
+    packages=find_packages(
+        exclude=["contrib", "docs", "tests"]
+    ),
     install_requires=[
         "pyyaml", "cerberus"
     ],

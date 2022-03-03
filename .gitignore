@@ -11,6 +11,7 @@
 .direnv/
 env/
 dist/
+build/
 docs/site/
 *.egg-info/
 .vscode/

@@ -1,5 +1,6 @@
 import abc
 import sys
+import logging
 from pathlib import Path
 
 from powerstrip.models.metadata import Metadata
@@ -15,6 +16,7 @@ class Plugin(abc.ABC):
         self.plugin_path = Path(
             sys.modules[self.__module__].__file__
         ).parent
+        self.log = logging.getLogger(self.__class__.__name__)
 
         self.metadata = Metadata()
         if auto_load_metadata:

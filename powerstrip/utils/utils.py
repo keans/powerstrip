@@ -2,8 +2,6 @@ from hashlib import sha3_256
 from typing import Union, BinaryIO
 from pathlib import Path
 
-from importlib_metadata import pathlib
-
 
 def ensure_path(
     path: Union[str, Path], must_exist: bool = False
