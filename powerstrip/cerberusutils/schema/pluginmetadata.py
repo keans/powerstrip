@@ -1,7 +1,7 @@
 # cerberus schema for plugin metadata
 plugin_metadata_schema = {
     # mandatory
-    "uuid": {
+    "hash": {
         "type": "string",
         "required": True,
         "check_with": "is_hex"

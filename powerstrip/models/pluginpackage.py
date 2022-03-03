@@ -1,13 +1,13 @@
-from curses import meta
 import io
 import logging
 import shutil
 import zipfile
+import hashlib
 from pathlib import Path
 from typing import Union
 
-from powerstrip.utils.utils import ensure_path
-from powerstrip.models import Metadata, plugin
+from powerstrip.utils.utils import ensure_path, hash_directory
+from powerstrip.models import Metadata
 from powerstrip.exceptions import PluginPackageException
 
 
@@ -62,12 +62,24 @@ class PluginPackage:
                 f"The plugin file '{plugin_filename}' does already exist!"
             )
 
+        # define suffixes and files to exclude for plugin packing
+        exclude_suffixes: list = [".pyc", ".bak", ".swp"],
+        exclude_filenames: list = ["__pycache__", ".DS_Store"],
+
+        # get directory's hash and save updated metadata back to file
+        md.hash = hash_directory(
+            directory=directory,
+            exclude_suffixes=exclude_suffixes,
+            exclude_filenames=exclude_filenames + (md.METADATA_FILENAME,)
+        ).hex()
+        md.save_to_directory(directory)
+
         log.debug(f"Opening '{plugin_filename}'...")
         with zipfile.ZipFile(plugin_filename, "w") as zf:
             for fn in directory.glob("**/*"):
                 if (
-                    fn.suffix in (".pyc", ) or
-                    fn.name in ("__pycache__", ".DS_Store")
+                    fn.suffix in exclude_suffixes or
+                    fn.name in exclude_filenames
                 ):
                     # skip unwanted extensions
                     continue

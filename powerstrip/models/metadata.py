@@ -26,7 +26,7 @@ class Metadata:
         """
         initialize the Metadata class
         """
-        self.uuid = None
+        self.hash = None
         self.name = None
         self.author = None
         self.description = None
@@ -37,26 +37,26 @@ class Metadata:
         self.tags = None
 
     @property
-    def uuid(self) -> str:
+    def hash(self) -> str:
         """
-        returns the plugin uuid
+        returns the plugin hash
 
-        :return: plugin uuid
+        :return: plugin hash
         :rtype: str
         """
-        return self._uuid or ""
+        return self._hash or ""
 
-    @uuid.setter
-    def uuid(self, value: str):
+    @hash.setter
+    def hash(self, value: str):
         """
-        set the plugin uuid
+        set the plugin hash
 
-        :param value: plugin uuid
+        :param value: plugin hash
         :type value: str
         """
         assert (value is None) or isinstance(value, str)
 
-        self._uuid = value
+        self._hash = value
 
     @property
     def name(self) -> str:
@@ -266,10 +266,10 @@ class Metadata:
         :rtype: dict
         """
         return {
-            "uuid": self.uuid,
             "name": self.name,
             "author": self.author,
             "description": self.description,
+            "hash": self.hash,
             "license": self.license,
             "version": str(self.version),
             "category": self.category,
@@ -372,7 +372,22 @@ class Metadata:
         """
         assert isinstance(f, TextIOWrapper)
 
-        yaml.safe_dump(self.dict, f)
+        yaml.safe_dump(self.dict, f, sort_keys=False)
+
+    def save_to_directory(
+        self,
+        plugin_directory: Union[str, Path] = "."
+    ):
+        """
+        save instance of Metadata to given directory
+
+        :param plugin_directory: plugin directory, defaults to "."
+        :type plugin_directory: Union[str, Path], optional
+        """
+        assert isinstance(plugin_directory, (str, Path))
+
+        with self.get_filename(plugin_directory).open("w") as f:
+            self.save(f)
 
     def load(self, f: TextIOWrapper):
         """
@@ -396,7 +411,7 @@ class Metadata:
         :rtype: str
         """
         return (
-            f"<Metadata(uuid='{self.uuid}', "
+            f"<Metadata(hash='{self.hash}', "
             f"name='{self.name}', "
             f"description='{self.description}', "
             f"author='{self.author}', "

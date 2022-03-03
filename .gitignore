@@ -3,6 +3,7 @@
 *.bak
 *.pyc
 *.log
+*.swp
 *.psp
 *.zip
 .env

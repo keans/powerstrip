@@ -10,7 +10,7 @@ from powerstrip.utils.semver import SemVer
 
 # dummy metadata file
 METADATA = """---
-uuid: {uuid}
+hash: {hash}
 name: {name}
 description: {description}
 license: {license}
@@ -23,7 +23,7 @@ tags: {tags}
 
 # values for the metadata
 METADATA_VALUES = {
-    "uuid": "deadbeef",
+    "hash": "deadbeef",
     "name": "MyPlugin",
     "description": "This is my description.",
     "license": "MIT",
@@ -52,21 +52,21 @@ class TestMetadata:
 
         print(md)
 
-    def test_uuid(self, md: Metadata):
+    def test_hash(self, md: Metadata):
         # create valid metadata class
-        assert md.uuid == ""
+        assert md.hash == ""
 
         # invalid type
         with pytest.raises(AssertionError):
-            md.uuid = -1
+            md.hash = -1
 
-        # None as valid uuid
-        md.uuid = None
-        assert md.uuid == ""
+        # None as valid hash
+        md.hash = None
+        assert md.hash == ""
 
-        # valid uuid
-        md.uuid = "deadbeef"
-        assert md.uuid == "deadbeef"
+        # valid hash
+        md.hash = "deadbeef"
+        assert md.hash == "deadbeef"
 
     def test_name(self, md: Metadata):
         # create valid metadata class
@@ -206,7 +206,7 @@ class TestMetadata:
 
     def test_dict(self, md: Metadata):
         for field in (
-            'uuid', 'name', 'author', 'description', 'version',
+            'hash', 'name', 'author', 'description', 'version',
             'category', 'url', 'tags'
         ):
             assert field in md.dict
@@ -256,6 +256,9 @@ class TestMetadata:
         with TEMP_FILE.open("w") as f:
             md.save(f)
 
+        # save again using save to directory function
+        md.save_to_directory(TEMP_FILE.parent)
+
         # create new instance for loading
         md = Metadata()
 
@@ -272,7 +275,6 @@ class TestMetadata:
             (md.dict[k], METADATA_VALUES[k])
             for k in METADATA_VALUES
         ])
-        print(md)
 
         # read file again from directory
         md2 = md.create_from_directory(TEMP_FILE.parent)

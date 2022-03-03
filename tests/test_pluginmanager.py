@@ -39,10 +39,6 @@ class TestPluginManager:
         target_directory = tmp_path / "plugins"
         target_directory.mkdir()
 
-        # invalid pluginmanager directory
-        with pytest.raises(ValueError):
-            pm = PluginManager("doesnotexit/")
-
         # valid pluginmanager directory
         pm = PluginManager(target_directory)
 
