@@ -16,12 +16,12 @@ def get_long_description():
 
 setup(
     name="python-powerstrip",
-    version="0.0.1",
+    version="0.0.2",
     description="Simple module to manage plugins.",
     long_description=get_long_description(),
     url="https://github.com/keans/powerstrip",
     author="Ansgar Kellner",
-    author_email="akellner@gmx.de",
+    author_email="keans@gmx.de",
     license="MIT",
     classifiers=[
         "Development Status :: 3 - Alpha",
