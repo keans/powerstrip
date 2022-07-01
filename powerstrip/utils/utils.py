@@ -96,9 +96,10 @@ def hash_directory(
     for fn in directory.glob(glob):
         if (
             fn.suffix in exclude_suffixes or
-            fn.name in exclude_filenames
+            fn.name in exclude_filenames or
+            fn.is_dir()
         ):
-            # skip excluded files
+            # skip excluded files and directories
             continue
 
         # XOR digest with file's digest

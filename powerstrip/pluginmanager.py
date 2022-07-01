@@ -1,5 +1,5 @@
-from inspect import isclass
 import logging
+import collections
 from pathlib import Path
 from typing import Union
 
@@ -45,9 +45,9 @@ class PluginManager:
         self.plugin_ext = plugin_ext
         self.log = logging.getLogger(self.__class__.__name__)
 
-        if auto_discover and not use_category :
-            # auto discover plugins from directory, if no category required
-            self.discover(subclass)
+        if auto_discover:
+            # auto discover plugins from directory
+            self.discover()
 
     @property
     def plugins_directory(self) -> Path:
@@ -128,11 +128,11 @@ class PluginManager:
         subclass: Plugin = None,
         category: str = None,
         tag: str = None
-    ) -> list:
+    ) -> dict:
         # if not provided, use originally define subclass
         subclass = subclass or self.subclass
 
-        plugin_classes = []
+        plugin_classes = collections.defaultdict(dict)
         for plugincls in subclass.__subclasses__():
             plugin = plugincls()
 
@@ -153,34 +153,42 @@ class PluginManager:
 
             if (
                 (tag is not None) and
-                (tag not in plugincls().metadata.tags)
+                (tag not in plugin.metadata.tags)
             ):
                 # tag is not matching
                 match = False
 
             if match:
-                # matching search criteria then add to list
-                plugin_classes.append(plugincls)
+                # matching search criteria then add to dict
+
+                # get category or use 'default' as category
+                cat = (
+                    plugin.metadata.category
+                    if self.use_category else
+                    "default"
+                )
+
+                if plugin.metadata.name in plugin_classes[cat]:
+                    # plugin with same name does already exist in category
+                    raise PluginManagerException(
+                        f"A plugin with the name '{plugin.metadata.name}' "
+                        f"does already exist in the category '{cat}'!"
+                    )
+
+                # add plugin to the category
+                plugin_classes[cat][plugin.metadata.name] = plugincls
 
         return plugin_classes
 
     def discover(
         self,
-        subclass: Plugin = Plugin,
     ) -> None:
         """
         discover all plugins that are located in the plugins directory
         and that do match the given subclass
-
-        :param subclass: subclass for which should be filtered,
-                         defaults to Plugin
-        :type subclass: Plugin, optional
         """
-        assert (subclass is None) or issubclass(subclass, Plugin)
-
         self.log.debug(
-            f"Discovering all plugins in '{self.plugins_directory}' for "
-            f"subclass '{subclass}'..."
+            f"Discovering all plugins in '{self.plugins_directory}'... "
         )
         for fn in self.plugins_directory.glob("**/*.py"):
             # derive from relative path the module name
@@ -193,22 +201,16 @@ class PluginManager:
             # load the module
             load_module(module_name, fn)
 
-        # return all classes that are a subclass of the given class
+        # return all classes that are a subclass of the Plugin class
         plugin_classes = [
             plugincls
             for plugincls in Plugin.__subclasses__()
-            if (
-                issubclass(plugincls, subclass) and
-                (plugincls is not subclass)
-            )
         ]
 
         self.log.debug(
             f"Found {len(plugin_classes)} plugins: "
             f"{', '.join([p.__name__ for p in plugin_classes])}"
         )
-
-        return plugin_classes
 
     def pack(
         self,

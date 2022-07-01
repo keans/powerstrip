@@ -63,8 +63,8 @@ class PluginPackage:
             )
 
         # define suffixes and files to exclude for plugin packing
-        exclude_suffixes: list = [".pyc", ".bak", ".swp"],
-        exclude_filenames: list = ["__pycache__", ".DS_Store"],
+        exclude_suffixes: list = [".pyc", ".bak", ".swp"]
+        exclude_filenames: list = ["__pycache__", ".DS_Store"]
 
         # get directory's hash and save updated metadata back to file
         md.hash = hash_directory(

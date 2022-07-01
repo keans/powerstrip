@@ -24,7 +24,7 @@ class Plugin(abc.ABC):
             self.metadata = Metadata.create_from_directory(self.plugin_path)
 
     @abc.abstractmethod
-    def init(self):
+    def init(self, **kwargs):
         pass
 
     @abc.abstractmethod

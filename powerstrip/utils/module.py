@@ -50,8 +50,10 @@ def load_module(module_name: str, path: Union[str, Path]):
 
     if spec.name not in sys.modules:
         # get module from spec, if not yet loaded
+        log.debug(f"getting module for spec '{spec.name}'...")
         mod = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = mod
 
         # load the module
+        log.debug(f"loading module '{spec.name}'...")
         spec.loader.exec_module(mod)
