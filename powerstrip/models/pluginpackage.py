@@ -23,7 +23,8 @@ class PluginPackage:
     def pack(
         directory: Union[str, Path],
         target_directory: Union[str, Path],
-        ext: str = ".psp"
+        ext: str = ".psp",
+        force: bool = False
     ) -> Path:
         """
         packs raw plugin from given directory and creates a plugin
@@ -33,8 +34,11 @@ class PluginPackage:
         :type directory: Union[str, Path]
         :param target_directory: target directory of the plugin package
         :type target_directory: Union[str, Path]
-        :param ext: name of the plugin package extension
+        :param ext: name of the plugin package extension, default: .psp
         :type ext: str
+        :param force: if True, package will be created even if it is already
+                      existing, default: False
+        :type force: bool
         :returns: name of the plugin package
         :type ext: Path
         :raises PluginPackageException: if plugin package is already existing
@@ -42,6 +46,7 @@ class PluginPackage:
         assert isinstance(directory, (str, Path))
         assert isinstance(target_directory, (str, Path))
         assert isinstance(ext, str) and ext.startswith(".")
+        assert isinstance(force, bool)
 
         # ensure that directory is a Path and that it does exist
         directory = ensure_path(directory, must_exist=True)
@@ -59,7 +64,7 @@ class PluginPackage:
         plugin_filename = target_directory.joinpath(
             f"{md.name.lower()}-{md.version}{ext}"
         )
-        if plugin_filename.exists():
+        if (force is False) and plugin_filename.exists():
             # plugin package does already exist
             raise PluginPackageException(
                 f"The plugin file '{plugin_filename}' does already exist!"
@@ -96,7 +101,8 @@ class PluginPackage:
     def install(
         plugin_filename: Union[str, Path],
         target_directory: Union[str, Path],
-        use_category: bool = False
+        use_category: bool = False,
+        force: bool = False
     ) -> Path:
         """
         installs a plugin package from a given plugin file
@@ -106,8 +112,12 @@ class PluginPackage:
         :type plugin_filename: Union[str, Path]
         :param target_directory: target directory
         :type target_directory: Union[str, Path]
-        :param category: if True, use category as subdirectory
-        :type category: bool
+        :param use_category: if True, use category as subdirectory
+        :type use_category: bool
+        :param force: if True, package will be installed even if it has already
+                      been installed previously, default: False
+        :type force: bool
+
         :returns: target directory
         :type category: Path
         :raises PluginPackageException: when plugin file does not exist
@@ -115,6 +125,7 @@ class PluginPackage:
         assert isinstance(plugin_filename, (str, Path))
         assert isinstance(target_directory, (str, Path))
         assert isinstance(use_category, bool)
+        assert isinstance(force, bool)
 
         # check that plugin filename is a Path and that it exists
         plugin_filename = ensure_path(plugin_filename, must_exist=True)
@@ -148,7 +159,7 @@ class PluginPackage:
                         metadata.category, metadata.name
                     )
 
-                if target_directory.exists():
+                if (force is False) and target_directory.exists():
                     # plugin does already exist
                     raise PluginPackageException(
                         f"The plugin '{metadata.name}' does already "
@@ -158,7 +169,7 @@ class PluginPackage:
                 log.debug(f"Installing plugin to '{target_directory}'...")
 
                 # create plugin directory
-                target_directory.mkdir(parents=True)
+                target_directory.mkdir(parents=True, exist_ok=True)
 
                 # extract all files from plugin package to target directory
                 zf.extractall(path=target_directory)

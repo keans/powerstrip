@@ -282,7 +282,8 @@ class PluginManager:
     def pack(
         self,
         directory: Union[str, Path],
-        target_directory: Union[str, Path] = None
+        target_directory: Union[str, Path] = None,
+        force: bool = False
     ) -> Path:
         """
         pack plugin from given source directory and store the
@@ -294,6 +295,9 @@ class PluginManager:
         :param target_directory: target directory to which packed plugin
                                  will be stored
         :type target_directory: Union[str, Path]
+        :param force: if True, package will be installed even if it is already
+                      existing, default: False
+        :type force: bool
         :return: filename of the packed plugin
         :rtype: Path
         """
@@ -303,7 +307,8 @@ class PluginManager:
                 target_directory or
                 self.plugins_repo_directory
             ),
-            ext=self.plugin_ext
+            ext=self.plugin_ext,
+            force=force
         )
 
     def info(self, plugin_filename: Union[str, Path]) -> dict:
@@ -322,13 +327,17 @@ class PluginManager:
 
     def install(
         self,
-        plugin_filename: Union[str, Path]
+        plugin_filename: Union[str, Path],
+        force: bool = True
     ) -> Path:
         """
         install plugin from given filename
 
         :param plugin_filename: plugin filename
         :type plugin_filename: Union[str, Path]
+        :param force: if True, package will be installed even if it has already
+                      been installed previously, default: False
+        :type force: bool
         :return: installed plugin directory
         """
         # find the plugin package
@@ -337,7 +346,8 @@ class PluginManager:
         return PluginPackage.install(
             plugin_filename=plugin_filename,
             target_directory=self.plugins_directory,
-            use_category=self.use_category
+            use_category=self.use_category,
+            force=force
         )
 
     def uninstall(
@@ -368,5 +378,7 @@ class PluginManager:
         """
         return (
             f"<PluginManager(plugins_directory='{self.plugins_directory}', "
+            f"plugins_repo_directory='{self.plugins_repo_directory}', "
+            f"use_category={self.use_category}, "
             f"subclass={self.subclass}, plugin_ext='{self.plugin_ext}')>"
         )
