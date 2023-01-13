@@ -65,6 +65,10 @@ class CustomValidator(Validator):
         """
         checks if value is a  valid list
         """
+        if value in ("", None):
+            # ignore not set list
+            return
+
         li = value.split(",")
         if not all(li):
             self._error(field, f"Invalid list '{value}'!")

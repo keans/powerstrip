@@ -191,7 +191,7 @@ class Metadata:
         """
         assert (value is None) or isinstance(value, str)
 
-        if value is None:
+        if value in (None, ""):
             # return empty list
             self._tags = []
 
