@@ -327,7 +327,13 @@ class Metadata:
         assert isinstance(plugin_directory, (str, Path))
 
         md = Metadata()
-        with md.get_filename(plugin_directory).open("r") as f:
+
+        # ensure that metadata file exists
+        filename = md.get_filename(plugin_directory)
+        ensure_path(filename, must_exist=True)
+
+        # load content from metadata file
+        with filename.open("r") as f:
             md.load(f)
 
         return md

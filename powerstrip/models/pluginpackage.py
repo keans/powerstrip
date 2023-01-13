@@ -4,7 +4,7 @@ import shutil
 import zipfile
 import hashlib
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 from powerstrip.utils.utils import ensure_path, hash_directory
 from powerstrip.models import Metadata
@@ -52,6 +52,9 @@ class PluginPackage:
         # target directory must exist
         target_directory = ensure_path(target_directory, must_exist=True)
 
+        # target directory must exist
+        target_directory = ensure_path(target_directory, must_exist=True)
+
         # plugin package filename
         plugin_filename = target_directory.joinpath(
             f"{md.name.lower()}-{md.version}{ext}"
@@ -70,7 +73,7 @@ class PluginPackage:
         md.hash = hash_directory(
             directory=directory,
             exclude_suffixes=exclude_suffixes,
-            exclude_filenames=exclude_filenames + (md.METADATA_FILENAME,)
+            exclude_filenames=exclude_filenames + [md.METADATA_FILENAME]
         ).hex()
         md.save_to_directory(directory)
 

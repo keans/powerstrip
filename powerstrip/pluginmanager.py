@@ -21,7 +21,8 @@ class PluginManager:
         subclass: Plugin = Plugin,
         use_category: bool = False,
         auto_discover: bool = True,
-        plugin_ext: str = ".psp"
+        plugin_ext: str = ".psp",
+        plugins_repo_directory: Union[str, Path] = "."
     ):
         """
         initialize the plugin manager class
@@ -38,11 +39,15 @@ class PluginManager:
         :type auto_discover: bool, optional
         :param plugin_ext: plugin extension name, defaults to ".psp"
         :type plugin_ext: str, optional
+        :param plugins_repo_directory: repository directory where packed plugin
+                                       packages are stored
+        :type plugins_repo_directory: Union[str, Path]
         """
         self.plugins_directory = plugins_directory
         self.subclass = subclass
         self.use_category = use_category
         self.plugin_ext = plugin_ext
+        self.plugins_repo_directory = plugins_repo_directory
         self.log = logging.getLogger(self.__class__.__name__)
 
         if auto_discover:
@@ -73,6 +78,32 @@ class PluginManager:
         if not self._plugin_directory.exists():
             # plugin directory does not exist => create it
             self._plugin_directory.mkdir(parents=True)
+
+    @property
+    def plugins_repo_directory(self) -> Path:
+        """
+        returns the repository plugins directory where all
+        packed plugins are located
+
+        :return: repository plugins directory
+        :rtype: Path
+        """
+        return self._plugins_repo_directory
+
+    @plugins_repo_directory.setter
+    def plugins_repo_directory(self, value: Union[str, Path]) -> None:
+        """
+        set the plugin repository directory
+
+        :param value: repository plugins directory
+        :type value: Union[str, Path]
+        """
+        # ensure that plugin_directory is a path
+        self._plugins_repo_directory = ensure_path(value)
+
+        if not self._plugins_repo_directory.exists():
+            # plugin repo directory does not exist => create it
+            self._plugins_repo_directory.mkdir(parents=True)
 
     @property
     def plugin_ext(self) -> str:
@@ -122,6 +153,43 @@ class PluginManager:
             )
             if directory
         ]
+
+    def _find_plugin_package(
+        self,
+        plugin_filename: Union[str, Path]
+    ) -> Path:
+        """
+        try to find the plugin package by first using the given path directly
+        then if not found, try to get the package from local path and the
+        if still not found from the repository path
+
+        :param plugin_filename: plugin package filename
+        :type plugin_filename: Union[str, Path]
+        :return: path of the plugin package file
+        :rtype: Path
+        """
+        plugin_filename = ensure_path(plugin_filename)
+        if plugin_filename.suffix != self.plugin_ext:
+            # add correct plug suffix
+            plugin_filename = plugin_filename.with_suffix(
+                plugin_filename.suffix + self.plugin_ext
+            )
+
+        if plugin_filename.exists():
+            # full path given and existing
+            return plugin_filename
+
+        # not found so try to find in local path or repo directory
+        for path in (Path("."), self.plugins_repo_directory):
+            fn = path.joinpath(plugin_filename.name)
+            if fn.exists():
+                # plugin package in the path found
+                return fn
+
+        # plugin package not found
+        raise PluginManagerException(
+            f"The plugin package '{plugin_filename}' could not be found!"
+        )
 
     def get_plugin_classes(
         self,
@@ -201,12 +269,11 @@ class PluginManager:
             # load the module
             load_module(module_name, fn)
 
-        # return all classes that are a subclass of the Plugin class
+        # get all classes that are a subclass of the Plugin class
         plugin_classes = [
             plugincls
             for plugincls in Plugin.__subclasses__()
         ]
-
         self.log.debug(
             f"Found {len(plugin_classes)} plugins: "
             f"{', '.join([p.__name__ for p in plugin_classes])}"
@@ -215,11 +282,12 @@ class PluginManager:
     def pack(
         self,
         directory: Union[str, Path],
-        target_directory: Union[str, Path] = "."
+        target_directory: Union[str, Path] = None
     ) -> Path:
         """
         pack plugin from given source directory and store the
-        resulting plugin package to the target directory
+        resulting plugin package to the target directory or to the
+        repository directory, if target directory is not provided
 
         :param directory: plugin source directory
         :type directory: Union[str, Path]
@@ -231,7 +299,10 @@ class PluginManager:
         """
         return PluginPackage.pack(
             directory=directory,
-            target_directory=target_directory,
+            target_directory=(
+                target_directory or
+                self.plugins_repo_directory
+            ),
             ext=self.plugin_ext
         )
 
@@ -244,6 +315,9 @@ class PluginManager:
         :return: metata of the plugin
         :rtype: dict
         """
+        # find the plugin package
+        plugin_filename = self._find_plugin_package(plugin_filename)
+
         return PluginPackage.info(plugin_filename)
 
     def install(
@@ -257,6 +331,9 @@ class PluginManager:
         :type plugin_filename: Union[str, Path]
         :return: installed plugin directory
         """
+        # find the plugin package
+        plugin_filename = self._find_plugin_package(plugin_filename)
+
         return PluginPackage.install(
             plugin_filename=plugin_filename,
             target_directory=self.plugins_directory,
