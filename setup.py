@@ -16,7 +16,7 @@ def get_long_description():
 
 setup(
     name="python-powerstrip",
-    version="0.0.3",
+    version="0.0.4",
     description="Simple module to manage plugins.",
     long_description=get_long_description(),
     url="https://github.com/keans/powerstrip",
