@@ -221,7 +221,7 @@ class PluginManager:
 
             if (
                 (tag is not None) and
-                (len(plugin.metadata.tags) > 0)
+                (len(plugin.metadata.tags) > 0) and
                 (tag not in plugin.metadata.tags)
             ):
                 # tag is not matching
